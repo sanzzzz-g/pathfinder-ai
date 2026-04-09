@@ -13,7 +13,7 @@
 
 <hr />
 
-<h2>🚀 Features</h2>
+<h2> Features</h2>
 
 <ul>
   <li>📝 <strong>AI Resume Builder</strong> – Create personalized, ATS-friendly resumes.</li>
