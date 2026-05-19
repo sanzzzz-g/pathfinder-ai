@@ -362,10 +362,38 @@ Thanks to all the amazing contributors who make PathFinder AI better 🚀
   </a>
 </p>
 
-> Every commit automatically updates contributor profile pictures in the README.
+<p align="center">
+  <i>Every commit automatically updates contributor profile pictures in the README.</i>
+</p>
 
 ---
 
+# ✨ Animated Contributors Wall
+
+<p align="center">
+  <b>Meet the amazing developers contributing to PathFinder AI 💖</b>
+</p>
+
+<marquee behavior="scroll" direction="left" scrollamount="8">
+
+<a href="https://github.com/harshdwivediiiii/pathfinder-ai/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=harshdwivediiiii/pathfinder-ai" />
+</a>
+
+</marquee>
+
+---
+
+# 🏆 Contributor Recognition
+
+All contributors will be recognized publicly.
+
+- Contributors automatically appear in the README
+- Major contributors receive special mentions
+- Long-term contributors may become collaborators
+- Every commit helps grow the PathFinder AI community ❤️
+
+---
 # 🤝 Code of Conduct
 
 Please be respectful, inclusive, and collaborative.
