@@ -57,7 +57,7 @@ export default function useStreamFetch() {
     }, TICK_MS);
   }, []);
 
-  const startStream = useCallback(async (prompt) => {
+const startStream = useCallback(async (prompt, conversationId = null) => {x
     // Cancel any existing stream
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -80,7 +80,10 @@ export default function useStreamFetch() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+     body: JSON.stringify({
+  prompt,
+  conversationId,
+}),
         signal: controller.signal,
       });
 
