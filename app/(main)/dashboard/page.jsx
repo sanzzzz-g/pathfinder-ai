@@ -17,6 +17,7 @@ import { getCoverLetters } from "@/actions/cover-letter";
 import { getAssessments } from "@/actions/interview";
 import { getUserOnboardingStatus } from "@/actions/user";
 import { getIndustryInsights } from "@/actions/dashboard";
+import { getATSAnalyses } from "@/actions/ats";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
@@ -28,6 +29,7 @@ export default function DashboardPage() {
   const [coverLetters, setCoverLetters] = useState([]);
   const [interviews, setInterviews] = useState([]);
   const [insights, setInsights] = useState(null);
+  const [atsAnalyses, setATSAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,11 +42,12 @@ export default function DashboardPage() {
           return;
         }
 
-        const [resumeData, coverLettersData, interviewsData, insightsData] = await Promise.all([
+        const [resumeData, coverLettersData, interviewsData, insightsData, atsData] = await Promise.all([
           getResume(),
           getCoverLetters(),
           getAssessments(),
           getIndustryInsights(),
+          getATSAnalyses(),
         ]);
 
         // Wrap single resume in array if it exists
@@ -52,6 +55,7 @@ export default function DashboardPage() {
         setCoverLetters(coverLettersData || []);
         setInterviews(interviewsData || []);
         setInsights(insightsData);
+        setATSAnalyses(atsData.success ? atsData.data : []);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -99,7 +103,9 @@ export default function DashboardPage() {
             interviews={interviews} 
           />
           <GrowthToolsGrid />
-          {insights && <DashboardView insights={insights} />}
+          {insights && (
+            <DashboardView insights={insights} atsAnalyses={atsAnalyses} />
+          )}
           <RecentDocs 
             resumes={resumes} 
             coverLetters={coverLetters} 
