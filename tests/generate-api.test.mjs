@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, it } from "vitest";
 
 import {
   getRateLimitIdentifier,
@@ -9,23 +8,23 @@ import {
 
 import { buildSseErrorResponse } from "../lib/prompt-guard.js";
 
-test("getRateLimitIdentifier returns user identifier when userId provided", () => {
+it("getRateLimitIdentifier returns user identifier when userId provided", () => {
   const id = getRateLimitIdentifier(null, "user-123");
-  assert.equal(id.kind, "user");
-  assert.equal(id.value, "user-123");
+  expect(id.kind).toBe("user");
+  expect(id.value).toBe("user-123");
 });
 
-test("getRateLimitIdentifier derives IP from forwarded header when no userId", () => {
+it("getRateLimitIdentifier derives IP from forwarded header when no userId", () => {
   const req = new Request("http://localhost", {
     headers: { "x-forwarded-for": "203.0.113.5, 1.2.3.4" },
   });
 
   const id = getRateLimitIdentifier(req, null);
-  assert.equal(id.kind, "ip");
-  assert.equal(id.value, "203.0.113.5");
+  expect(id.kind).toBe("ip");
+  expect(id.value).toBe("203.0.113.5");
 });
 
-test("enforceRateLimit allows first request and blocks immediate second when burstCapacity=1", () => {
+it("enforceRateLimit allows first request and blocks immediate second when burstCapacity=1", () => {
   const req = new Request("http://localhost", {
     headers: { "x-forwarded-for": "198.51.100.7" },
   });
@@ -34,35 +33,35 @@ test("enforceRateLimit allows first request and blocks immediate second when bur
   const endpoint = "/test/rl";
 
   const first = enforceRateLimit({ endpoint, subject, limitPerMinute: 1, burstCapacity: 1 });
-  assert.equal(first.allowed, true);
+  expect(first.allowed).toBe(true);
 
   const second = enforceRateLimit({ endpoint, subject, limitPerMinute: 1, burstCapacity: 1 });
-  assert.equal(second.allowed, false);
-  assert.ok(typeof second.retryAfterSeconds === "number" && second.retryAfterSeconds >= 1);
+  expect(second.allowed).toBe(false);
+  expect(typeof second.retryAfterSeconds === "number" && second.retryAfterSeconds >= 1).toBe(true);
 });
 
-test("buildRateLimitResponse returns SSE body and correct headers when sse=true", async () => {
+it("buildRateLimitResponse returns SSE body and correct headers when sse=true", async () => {
   const res = buildRateLimitResponse({ message: "Too Many Requests", retryAfterSeconds: 10, sse: true });
-  assert.equal(res.status, 429);
-  assert.equal(res.headers.get("Content-Type"), "text/event-stream");
+  expect(res.status).toBe(429);
+  expect(res.headers.get("Content-Type")).toBe("text/event-stream");
   const text = await res.text();
-  assert.ok(text.includes("data:"));
+  expect(text).toContain("data:");
   const payloadLine = text.split("\n").find((line) => line.startsWith("data: "));
-  assert.ok(payloadLine);
+  expect(payloadLine).toBeTruthy();
   const payload = JSON.parse(payloadLine.slice(6));
-  assert.equal(payload.error, "Too Many Requests");
-  assert.equal(payload.retryAfterSeconds, 10);
+  expect(payload.error).toBe("Too Many Requests");
+  expect(payload.retryAfterSeconds).toBe(10);
 });
 
-test("buildSseErrorResponse streams an SSE error and terminates with [DONE]", async () => {
+it("buildSseErrorResponse streams an SSE error and terminates with [DONE]", async () => {
   const res = buildSseErrorResponse("Prompt is required", 400);
-  assert.equal(res.status, 400);
-  assert.equal(res.headers.get("Content-Type"), "text/event-stream");
+  expect(res.status).toBe(400);
+  expect(res.headers.get("Content-Type")).toBe("text/event-stream");
   const text = await res.text();
-  assert.ok(text.includes('data:'));
+  expect(text).toContain("data:");
   const payloadLine = text.split("\n").find((line) => line.startsWith("data: {"));
-  assert.ok(payloadLine);
+  expect(payloadLine).toBeTruthy();
   const payload = JSON.parse(payloadLine.slice(6));
-  assert.equal(payload.error, "Prompt is required");
-  assert.ok(text.includes("[DONE]"));
+  expect(payload.error).toBe("Prompt is required");
+  expect(text).toContain("[DONE]");
 });

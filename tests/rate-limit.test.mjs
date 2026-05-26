@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, it } from "vitest";
 
 import { enforceRateLimit } from "../lib/rate-limit.js";
 import {
@@ -7,7 +6,7 @@ import {
   createRateLimitStore,
 } from "../lib/rate-limit/store.js";
 
-test("memory store evicts stale buckets", async () => {
+it("memory store evicts stale buckets", async () => {
   const store = createMemoryRateLimitStore({ bucketTtlMs: 1000 });
 
   await store.setBucket("/api/generate:user:1", {
@@ -19,25 +18,25 @@ test("memory store evicts stale buckets", async () => {
 
   await store.cleanupExpiredBuckets(2000);
 
-  assert.equal(await store.getBucket("/api/generate:user:1"), null);
+  expect(await store.getBucket("/api/generate:user:1")).toBeNull();
 });
 
-test("factory defaults to memory storage when redis is not configured", () => {
+it("factory defaults to memory storage when redis is not configured", () => {
   const store = createRateLimitStore({ driver: "memory" });
 
-  assert.equal(store.kind, "memory");
+  expect(store.kind).toBe("memory");
 });
 
-test("factory can create a redis store lazily", () => {
+it("factory can create a redis store lazily", () => {
   const store = createRateLimitStore({
     driver: "redis",
     redisUrl: "redis://localhost:6379",
   });
 
-  assert.equal(store.kind, "redis");
+  expect(store.kind).toBe("redis");
 });
 
-test("rate limiter consumes burst capacity and then rejects", async () => {
+it("rate limiter consumes burst capacity and then rejects", async () => {
   const store = createMemoryRateLimitStore({ bucketTtlMs: 60_000 });
   const subject = { kind: "user", value: "abc" };
 
@@ -50,8 +49,8 @@ test("rate limiter consumes burst capacity and then rejects", async () => {
     now: 1000,
   });
 
-  assert.equal(first.allowed, true);
-  assert.equal(first.remaining, 1);
+  expect(first.allowed).toBe(true);
+  expect(first.remaining).toBe(1);
 
   const second = await enforceRateLimit({
     endpoint: "/api/generate",
@@ -62,8 +61,8 @@ test("rate limiter consumes burst capacity and then rejects", async () => {
     now: 1000,
   });
 
-  assert.equal(second.allowed, true);
-  assert.equal(second.remaining, 0);
+  expect(second.allowed).toBe(true);
+  expect(second.remaining).toBe(0);
 
   const third = await enforceRateLimit({
     endpoint: "/api/generate",
@@ -74,12 +73,12 @@ test("rate limiter consumes burst capacity and then rejects", async () => {
     now: 1000,
   });
 
-  assert.equal(third.allowed, false);
-  assert.equal(third.remaining, 0);
-  assert.equal(third.retryAfterSeconds, 1);
+  expect(third.allowed).toBe(false);
+  expect(third.remaining).toBe(0);
+  expect(third.retryAfterSeconds).toBe(1);
 });
 
-test("rate limiter refills after elapsed time", async () => {
+it("rate limiter refills after elapsed time", async () => {
   const store = createMemoryRateLimitStore({ bucketTtlMs: 60_000 });
   const subject = { kind: "ip", value: "127.0.0.1" };
 
@@ -101,6 +100,6 @@ test("rate limiter refills after elapsed time", async () => {
     now: 61_000,
   });
 
-  assert.equal(refill.allowed, true);
-  assert.equal(refill.remaining, 1);
+  expect(refill.allowed).toBe(true);
+  expect(refill.remaining).toBe(1);
 });
