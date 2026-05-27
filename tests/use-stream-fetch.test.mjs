@@ -1,19 +1,21 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import useStreamFetch from "../hooks/use-stream-fetch.js";
-import { createSseResponse, handlers } from "./mocks/handlers.mjs";
+import { createSseResponse } from "./mocks/handlers.mjs";
 import { server } from "./mocks/server.mjs";
 import { http } from "msw";
 
 describe("useStreamFetch", () => {
-  it("streams SSE deltas and resolves with the final text", async () => {
+  it("streams SSE deltas across chunk boundaries and handles multi-line data blocks", async () => {
     server.use(
       http.post("http://localhost/api/generate", () => {
         return createSseResponse([
-          "event: delta\ndata: {\"text\":\"Hello \"}\n\n",
+          "event: de",
+          "lta\ndata: {\"text\":\"Hello \"}\n\n",
           "event: delta\ndata: {\"text\":\"career world\"}\n\n",
-          "event: done\ndata: {\"finalText\":\"Hello career world\",\"hasContent\":true}\n\n",
+          "event: done\ndata: {\"finalText\":\"Hello career world\",\n",
+          "data: \"hasContent\":true}\n\n",
         ]);
       })
     );
@@ -34,5 +36,35 @@ describe("useStreamFetch", () => {
     expect(result.current.finalText).toBe("Hello career world");
     expect(result.current.error).toBeNull();
     expect(result.current.isLoading).toBe(false);
+  });
+
+  it("surfaces malformed delta payloads instead of silently skipping them", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    server.use(
+      http.post("http://localhost/api/generate", () => {
+        return createSseResponse(["event: delta\ndata: {\"wrong\":true}\n\n"]);
+      })
+    );
+
+    const { result } = renderHook(() => useStreamFetch());
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.startStream("Write a resume summary");
+    });
+
+    expect(outcome).toEqual({
+      status: "error",
+      error: "Malformed SSE delta payload",
+      finalText: "",
+    });
+    expect(result.current.streamedText).toBe("");
+    expect(result.current.finalText).toBe("");
+    expect(result.current.error).toBe("Malformed SSE delta payload");
+    expect(result.current.isLoading).toBe(false);
+    expect(warnSpy).toHaveBeenCalled();
+
+    warnSpy.mockRestore();
   });
 });
